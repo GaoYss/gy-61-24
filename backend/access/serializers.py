@@ -13,11 +13,18 @@ class AccessDeviceSerializer(serializers.ModelSerializer):
 
 class VisitorPassSerializer(serializers.ModelSerializer):
     device_name = serializers.CharField(source="device.name", read_only=True)
-    pass_status_display = serializers.CharField(source="get_pass_status_display", read_only=True)
+    pass_status = serializers.SerializerMethodField()
+    pass_status_display = serializers.SerializerMethodField()
 
     class Meta:
         model = VisitorPass
         fields = "__all__"
+
+    def get_pass_status(self, obj):
+        return obj.effective_status
+
+    def get_pass_status_display(self, obj):
+        return obj.effective_status_display
 
 
 class AlarmEventSerializer(serializers.ModelSerializer):

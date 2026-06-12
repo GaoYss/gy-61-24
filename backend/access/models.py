@@ -46,6 +46,23 @@ class VisitorPass(models.Model):
     def __str__(self):
         return f"{self.visitor_name} -> {self.host_name}"
 
+    @property
+    def effective_status(self):
+        if self.pass_status in (self.PassStatus.PENDING, self.PassStatus.APPROVED):
+            now = timezone.now()
+            expire_time = self.leave_time or self.visit_time
+            if expire_time and now > expire_time:
+                return self.PassStatus.EXPIRED
+        return self.pass_status
+
+    @property
+    def effective_status_display(self):
+        status = self.effective_status
+        for value, label in self.PassStatus.choices:
+            if value == status:
+                return label
+        return status
+
 
 class AlarmEvent(models.Model):
     class AlarmType(models.TextChoices):

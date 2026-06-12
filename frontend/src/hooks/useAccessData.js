@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { accessApi } from "../api/client";
+import { resolveVisitorPassStatus } from "../utils/format";
 
 export function useAccessData() {
   const [state, setState] = useState({
@@ -26,7 +27,8 @@ export function useAccessData() {
           accessApi.doorLogs(),
         ]);
         if (mounted) {
-          setState({ loading: false, error: "", stats, devices, visitors, alarms, logs });
+          const resolvedVisitors = visitors.map(resolveVisitorPassStatus);
+          setState({ loading: false, error: "", stats, devices, visitors: resolvedVisitors, alarms, logs });
         }
       } catch (error) {
         if (mounted) {

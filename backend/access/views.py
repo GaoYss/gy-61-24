@@ -22,7 +22,17 @@ class VisitorPassViewSet(viewsets.ModelViewSet):
     search_fields = ["visitor_name", "phone", "host_name", "reason"]
     ordering_fields = ["visit_time", "created_at", "pass_status"]
 
+    def _sync_expired_passes(self):
+        now = timezone.now()
+        VisitorPass.objects.filter(
+            pass_status__in=[VisitorPass.PassStatus.PENDING, VisitorPass.PassStatus.APPROVED],
+        ).filter(
+            Q(leave_time__isnull=False, leave_time__lt=now)
+            | Q(leave_time__isnull=True, visit_time__lt=now)
+        ).update(pass_status=VisitorPass.PassStatus.EXPIRED)
+
     def get_queryset(self):
+        self._sync_expired_passes()
         queryset = VisitorPass.objects.select_related("device")
         status_value = self.request.query_params.get("status")
         if status_value:
@@ -73,7 +83,14 @@ class DoorLogViewSet(viewsets.ModelViewSet):
 
 class StatsView(APIView):
     def get(self, request):
+        now = timezone.now()
         today = timezone.localdate()
+        VisitorPass.objects.filter(
+            pass_status__in=[VisitorPass.PassStatus.PENDING, VisitorPass.PassStatus.APPROVED],
+        ).filter(
+            Q(leave_time__isnull=False, leave_time__lt=now)
+            | Q(leave_time__isnull=True, visit_time__lt=now)
+        ).update(pass_status=VisitorPass.PassStatus.EXPIRED)
         return Response(
             {
                 "devices_total": AccessDevice.objects.count(),
